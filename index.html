@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 공학개론 5조</title>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @keyframes float { 0%, 100% { transform: translate(0, 0); } 50% { transform: translate(40px, -20px); } }
+        @keyframes twinkle { 0%, 100% { opacity: 0.4; transform: scale(0.8); } 50% { opacity: 1; transform: scale(1.3); } }
+        @keyframes pop-in { 0% { transform: scale(0.8); opacity: 0; } 70% { transform: scale(1.1); } 100% { transform: scale(1); opacity: 1; } }
+        body { margin: 0; overflow: hidden; cursor: none; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+        const { User, Users, MessageSquare, Sparkles, Plus, HelpCircle, Settings, X, MousePointer2, Star } = lucide;
+
+        // 아이콘을 렌더링하기 위한 간단한 컴포넌트
+        const Icon = ({ name, size = 18, className = "" }) => {
+            const IconComponent = lucide[name];
+            return IconComponent ? <IconComponent size={size} className={className} /> : null;
+        };
+
+        const App = () => {
+            const [messages, setMessages] = useState([]);
+            const [isTyping, setIsTyping] = useState(false);
+            const [showHelpModal, setShowHelpModal] = useState(false);
+            const [showSettingsModal, setShowSettingsModal] = useState(false);
+            const [language, setLanguage] = useState('ko');
+            const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+            const scrollEndRef = useRef(null);
+
+            useEffect(() => {
+                scrollEndRef.current?.scrollIntoView({ behavior: "smooth" });
+            }, [messages, isTyping]);
+
+            const translations = {
+                ko: {
+                    newChat: "새 채팅", recent: "최근 대화", help: "도움말", settings: "설정",
+                    title: "AI 공학개론 5조", inputPlaceholder: "궁금한 항목을 선택해주세요",
+                    helpTitle: "도움말", helpContent1: "우리 조원들의 정보와 소개를 확인하실 수 있습니다.",
+                    langSelect: "언어 설정"
+                },
+                en: {
+                    newChat: "New Chat", recent: "Recent", help: "Help", settings: "Settings",
+                    title: "AI Team 5", inputPlaceholder: "Select an item to chat",
+                    helpTitle: "Help", helpContent1: "You can check our team information and roles.",
+                    langSelect: "Language"
+                }
+            };
+            const t = translations[language];
+
+            useEffect(() => {
+                const handleMouseMove = (e) => setMousePos({ x: e.clientX, y: e.clientY });
+                window.addEventListener('mousemove', handleMouseMove);
+                return () => window.removeEventListener('mousemove', handleMouseMove);
+            }, []);
+
+            const teamData = {
+                teamInfo: {
+                    question: language === 'ko' ? "우리 조 전체 소개" : "About our team",
+                    answer: "안녕하세요! 저희는 'AI 공학개론' 5조입니다. 바이오메디컬공학부와 자율전공학부의 만남으로 구성되었습니다. \n\n\"우리가 세상을 구하진 않지만, 과제는 구한다!\"",
+                    image: "https://i.postimg.cc/wjn6Rs5B/Kakao-Talk-20260323-182324252.png",
+                    neonColor: "blue"
+                },
+                members: [
+                    { id: 1, name: "조영웅", role: "조장", question: "조장 조영웅님은?", answer: "[리더십 설탕 MAX] 팀의 든든한 리더, 블로섬 담당입니다!", image: "https://i.postimg.cc/hzDL4ysX/Kakao-Talk-20260323-180255097-02.png", neonColor: "pink" },
+                    { id: 2, name: "박선주", role: "조원", question: "조원 박선주님은?", answer: "[친화력 스파이스 MAX] 러블리 버블 담당입니다!", image: "https://i.postimg.cc/gXzVcSsv/Kakao-Talk-20260323-180255097-03.png", neonColor: "blue" },
+                    { id: 4, name: "신가연", role: "조원", question: "조원 신가연님은?", answer: "[집중력 케미컬 X MAX] 버터컵 담당입니다!", image: "https://i.postimg.cc/k6JQM1sK/Kakao-Talk-20260323-180255097.png", neonColor: "green" },
+                    { id: 3, name: "박효빈", role: "조원", question: "조원 박효빈님은?", answer: "[통찰력 마법 가루 MAX] 팀의 비밀 병기입니다!", image: "https://i.postimg.cc/YGr62nRN/Kakao-Talk-20260323-180255097-01.png", neonColor: "purple" }
+                ]
+            };
+
+            const getNeonStyles = (color) => {
+                const styles = {
+                    pink: "border-pink-600 shadow-[0_5px_15px_rgba(219,39,119,0.3)] bg-white hover:bg-pink-50",
+                    blue: "border-blue-600 shadow-[0_5px_15px_rgba(37,99,235,0.3)] bg-white hover:bg-blue-50",
+                    purple: "border-purple-600 shadow-[0_5px_15px_rgba(147,51,234,0.3)] bg-white hover:bg-purple-50",
+                    green: "border-green-600 shadow-[0_5px_15px_rgba(22,163,74,0.3)] bg-white hover:bg-green-50"
+                };
+                return styles[color] || "";
+            };
+
+            const handleQuestionClick = (q, a, name, image, isTeam, neonColor) => {
+                if (isTyping) return;
+                setMessages(prev => [...prev, { type: 'user', text: q }]);
+                setIsTyping(true);
+                setTimeout(() => {
+                    setMessages(prev => [...prev, { type: 'bot', text: a, name, image, isTeam, neonColor }]);
+                    setIsTyping(false);
+                }, 1000);
+            };
+
+            return (
+                <div className="flex h-screen bg-[#4b8df8] text-[#1f1f1f] relative overflow-hidden">
+                    {/* Mouse Custom Pointer */}
+                    <div className="fixed pointer-events-none z-[9999]" style={{ left: mousePos.x, top: mousePos.y, transform: 'translate(-50%, -50%)' }}>
+                        <div className="w-5 h-5 bg-white rounded-full border-2 border-yellow-400 shadow-[0_0_15px_white]"></div>
+                    </div>
+
+                    {/* Sidebar */}
+                    <aside className="hidden md:flex flex-col w-52 p-4 z-10">
+                        <button onClick={() => setMessages([])} className="flex items-center gap-2 bg-pink-500 rounded-xl px-4 py-3 mb-6 border-2 border-white text-white font-black shadow-[0_4px_0_rgb(190,24,93)]">
+                            <Plus size={18} /> <span>{t.newChat}</span>
+                        </button>
+                        <div className="flex-1 space-y-2">
+                             <p className="text-[10px] font-black text-white uppercase tracking-widest">{t.recent}</p>
+                             <div className="p-3 rounded-xl bg-white border-2 border-blue-600 text-[10px] font-black">{t.title}</div>
+                        </div>
+                        <div className="space-y-1 pt-3 border-t-2 border-white/20">
+                            <button onClick={() => setShowHelpModal(true)} className="flex items-center gap-2 text-white font-black text-xs"><HelpCircle size={18}/> {t.help}</button>
+                            <button onClick={() => setShowSettingsModal(true)} className="flex items-center gap-2 text-white font-black text-xs"><Settings size={18}/> {t.settings}</button>
+                        </div>
+                    </aside>
+
+                    {/* Main Content */}
+                    <main className="flex-1 flex flex-col bg-white md:m-4 md:rounded-[3rem] shadow-2xl overflow-hidden z-10 border-4 border-white">
+                        <header className="flex items-center justify-between px-8 py-4 border-b-4 border-blue-50">
+                            <div className="flex items-center gap-3">
+                                <div className="w-9 h-9 bg-pink-500 rounded-xl flex items-center justify-center text-white font-black border-2 border-white">5</div>
+                                <span className="text-lg font-black text-gray-800">{t.title}</span>
+                            </div>
+                        </header>
+
+                        <div className="flex-1 overflow-y-auto px-4 md:px-10 bg-[#f8fbff]">
+                            {messages.length === 0 ? (
+                                <div className="h-full flex flex-col justify-center max-w-2xl mx-auto space-y-4">
+                                    <button onClick={() => handleQuestionClick(teamData.teamInfo.question, teamData.teamInfo.answer, "Team 5", teamData.teamInfo.image, true, 'blue')} className="p-4 rounded-[1.8rem] border-4 border-blue-500 bg-white shadow-[0_6px_0_rgb(37,99,235)] flex items-center justify-between font-black text-blue-900">
+                                        {teamData.teamInfo.question} <Sparkles className="text-yellow-400" />
+                                    </button>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        {teamData.members.map(m => (
+                                            <button key={m.id} onClick={() => handleQuestionClick(m.question, m.answer, m.name, m.image, false, m.neonColor)} className={`p-4 rounded-[1.8rem] border-4 flex flex-col justify-between h-32 ${getNeonStyles(m.neonColor)}`}>
+                                                <span className="font-black text-sm text-gray-700">{m.question}</span>
+                                                <span className="text-xs font-bold">{m.name}</span>
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="max-w-2xl mx-auto py-6 space-y-6">
+                                    {messages.map((msg, i) => (
+                                        <div key={i} className={`flex gap-4 ${msg.type === 'user' ? 'flex-row-reverse' : ''}`}>
+                                            <div className="w-9 h-9 rounded-xl bg-blue-600 text-white flex items-center justify-center font-black">{msg.type === 'bot' ? '★' : 'U'}</div>
+                                            <div className={`${msg.type === 'user' ? 'bg-blue-600 text-white' : 'bg-white border-4 border-pink-100'} p-4 rounded-[1.5rem] shadow-md max-w-[80%]`}>
+                                                <p className="text-sm font-black whitespace-pre-wrap">{msg.text}</p>
+                                                {msg.image && <img src={msg.image} className="mt-4 rounded-xl w-full max-w-[200px] border-4 border-white shadow-lg" />}
+                                            </div>
+                                        </div>
+                                    ))}
+                                    <div ref={scrollEndRef} />
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="px-8 pb-6">
+                            <div className="max-w-2xl mx-auto bg-[#f0f4f8] rounded-[1.8rem] px-6 py-3 border-4 border-white shadow-xl flex items-center">
+                                <input className="bg-transparent flex-1 outline-none text-[11px] font-black" placeholder={t.inputPlaceholder} readOnly />
+                                <MousePointer2 className="text-pink-600" />
+                            </div>
+                        </div>
+                    </main>
+                    
+                    {/* Settings Modal */}
+                    {showSettingsModal && (
+                        <div className="fixed inset-0 z-[100] bg-black/50 flex items-center justify-center" onClick={() => setShowSettingsModal(false)}>
+                            <div className="bg-white p-8 rounded-[2rem] border-8 border-white w-80" onClick={e => e.stopPropagation()}>
+                                <h3 className="font-black mb-4">{t.langSelect}</h3>
+                                <div className="grid grid-cols-2 gap-2">
+                                    <button onClick={() => setLanguage('ko')} className="p-3 bg-pink-500 text-white rounded-xl font-black">KOR</button>
+                                    <button onClick={() => setLanguage('en')} className="p-3 bg-blue-500 text-white rounded-xl font-black">ENG</button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
